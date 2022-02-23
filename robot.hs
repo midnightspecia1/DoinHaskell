@@ -32,10 +32,9 @@ fight attackerR defenderR = damage defenderR attack
                                            then getPower attackerR
                                            else 0
 
--- --three round fight
--- threeRoundfight rA rB = let rAFinal = foldl damage rB [dmgA, dmgA, dmgA]
---                             rBFinal = foldl fight rA [dmgB, dmgB, dmgB]
-
+--three round fight
+-- threeRoundfight rA rB = let rAFinal = foldl fight rB [rA, rA, rA]
+--                             rBFinal = foldl fight rA [rB, rB, rB]
 --                         in 
 --                             if getHealth rAFinal > getHealth rBFinal
 --                             then rAFinal
@@ -46,6 +45,14 @@ fight attackerR defenderR = damage defenderR attack
 fastRobot = robot ("fast", 12, 40)
 slowRobot = robot ("slow", 15, 70)
 anotherOne = robot("another", 30, 28)
+
+fourthRob = robot("fourth", 20, 30)
+
+robotList = [fastRobot, slowRobot, anotherOne]
+
+fightFourth = fight fourthRob
+outRobots = map fightFourth robotList
+lifeRemaining = map getHealth outRobots
 
 slowRobotRound3 = fight fastRobotRound2 slowRobotRound2
 slowRobotRound2 = fight fastRobotRound1 slowRobotRound1
