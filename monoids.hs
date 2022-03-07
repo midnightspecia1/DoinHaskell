@@ -31,7 +31,7 @@ instance Semigroup Integer where
 --type signature for the semigroup describing how it works
 
 --Lets try to create Color type and implement semigroup for it
-data Color = Red | Blue | Yellow | Green | Purple | Orange | Brown deriving (Show, Eq)
+data Color = Transparent | Red | Blue | Yellow | Green | Purple | Orange | Brown deriving (Show, Eq)
 
 instance Semigroup Color where
     (<>) Red Blue = Purple
@@ -47,7 +47,21 @@ instance Semigroup Color where
              | otherwise = Brown
 
 instance Monoid Color where
-    mempty = 
+    mempty = Transparent
+    mappend Red Blue = Purple
+    mappend Blue Red = Purple
+    mappend Yellow Blue = Green
+    mappend Blue Yellow = Green
+    mappend Red Yellow = Orange
+    mappend Yellow Red = Orange
+    mappend a b | a == b = a
+                | a == mempty = b
+                | b == mempty = a
+                | all (`elem` [Red, Blue, Purple]) [a, b] = Purple
+                | all (`elem` [Blue,Yellow,Green]) [a, b] = Green
+                | all (`elem` [Red, Yellow, Orange]) [a, b] = Orange
+                | otherwise = Brown
+
 --this code working not Associative
 --Associative - means that order in witch you apply <> doesn't matter
 --right now (Green <> Yellow) <> Blue 
