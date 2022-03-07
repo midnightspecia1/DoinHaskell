@@ -91,15 +91,32 @@ howMuch n | n > 10 = "a whole bunch"
 --   mconcat :: [a] -> a
 
 --building probability tables with monoids
-type Events = [String]
-type Probs = [Double]
-
+data Events = Events [String]
+data Probs = Probs [Double]
 data PTable = PTable Events Probs
 
+-- instance Semigroup Events where
+--     (<>) a b = cartezCombine (*) a b
+
+instance Semigroup Probs where
+    (<>) (Probs a) (Probs b) = Probs (cartezCombine (*) a b)
+
+instance Monoid Probs where
+    mempty = Probs []
+    mappend = (<>)
+
+instance Semigroup Events where
+    (<>) (Events a) (Events b) = Events (cartezCombine combiner a b)
+                    where combiner = \x y -> mconcat [x, "-", y]
+
+instance Monoid Events where
+    mempty = Events []
+    mappend = (<>)
+
 createPTable :: Events -> Probs -> PTable
-createPTable events probs = PTable events normilizedProbs
-                where normilizedProbs = map (\x -> x/totalProbs) probs
-                      totalProbs = sum probs
+createPTable (Events e) (Probs p) = PTable (Events e) (Probs normilizedProbs)
+                where normilizedProbs = map (\x -> x/totalProbs) p
+                      totalProbs = sum p
 
 showPair :: String -> Double -> String
 showPair event prob = mconcat [event, " | ", show prob, "\n"]
@@ -107,8 +124,8 @@ showPair event prob = mconcat [event, " | ", show prob, "\n"]
 --zipWith - function that zipping two lists together and apllying a function to those lists
 
 instance Show PTable where
-    show (PTable events probs) = mconcat pairs
-            where pairs = zipWith showPair events probs
+    show (PTable (Events e) (Probs p)) = mconcat pairs
+            where pairs = zipWith showPair e p
 
 --making function of the Cartezian product of lists
 cartezCombine :: (a -> b -> c) -> [a] -> [b] -> [c]
@@ -118,30 +135,23 @@ cartezCombine func l1 l2 = zipWith func newL1 cycledL2
                newL1 = mconcat repeatedL1 
                cycledL2 = cycle l2
 
-combineEvents :: Events -> Events -> Events
-combineEvents e1 e2 = cartezCombine combiner e1 e2
-        where combiner = \x y -> mconcat [x, "-", y]
-
-combineProbs :: Probs -> Probs -> Probs
-combineProbs p1 p2 = cartezCombine (*) p1 p2
-
 --now lets make PTable and instance of the Semigroup
 instance Semigroup PTable where
-    (<>) ptable1 (PTable [] []) = ptable1
-    (<>) (PTable [] []) ptable2 = ptable2
+    (<>) ptable1 (PTable (Events []) (Probs[])) = ptable1
+    (<>) (PTable (Events []) (Probs[])) ptable2 = ptable2
     (<>) (PTable e1 p1) (PTable e2 p2) = createPTable newEvents newProbs
-            where newEvents = combineEvents e1 e2
-                  newProbs = combineProbs p1 p2
+            where newEvents = mappend e1 e2
+                  newProbs = mappend p1 p2
 
 --finally we can implement Monoid type class 
 instance Monoid PTable where 
-    mempty = createPTable [] []
+    mempty = createPTable (Events []) (Probs[])
     mappend = (<>)
 
 --lets look how all this works 
 coin :: PTable
-coin = createPTable ["heads", "tails"] [0.5, 0.5]
+coin = createPTable  (Events ["heads", "tails"]) (Probs [0.5, 0.5])
 
 colorSpinner :: PTable
-colorSpinner = createPTable ["red", "blue", "green"] [0.1, 0.9, 0.3]
+colorSpinner = createPTable (Events ["red", "blue", "green"]) (Probs [0.1, 0.9, 0.3])
 
