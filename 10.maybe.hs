@@ -1,6 +1,7 @@
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
+import Distribution.Simple.Utils (xargs)
 
 --lesson 19
 --Maybe type: dealing with missing values
@@ -64,3 +65,56 @@ oneStringOrgans = intercalate ", " organList
 numOrZero :: Maybe Int -> Int
 numOrZero (Just a) = a
 numOrZero Nothing = 0
+
+
+
+data Container = Vat Organ | Cooler Organ | Bag Organ
+
+instance Show Container where
+    show (Vat organ) = show organ ++ " in a vat"
+    show (Cooler organ) = show organ ++ " in a cooler"
+    show (Bag organ) = show organ ++ " in a bag"
+
+data Location = Lab | Kitchen | Bathroom deriving Show
+
+organToContainer :: Organ -> Container
+organToContainer Heart = Cooler Heart
+organToContainer Brain = Vat Brain
+organToContainer organ = Bag organ
+
+placeInLocation :: Container -> (Location, Container)
+placeInLocation (Vat a) = (Lab, Vat a)
+placeInLocation (Cooler a) = (Lab, Cooler a)
+placeInLocation (Bag a) = (Kitchen, Bag a)
+
+process :: Organ -> (Location, Container)
+process organ = placeInLocation (organToContainer organ)
+
+report :: Maybe (Location, Container) -> String
+report (Just (loc, cont)) = show cont ++ " in the " ++ show loc
+report Nothing = "container not found"
+
+--now need to deal with possible missing values and how to handle it in process
+processAndReport :: (Maybe Organ) -> String
+processAndReport Nothing = "Id not found"
+processAndReport (Just organ) = report (Just (process organ))
+
+processRequest :: Int -> Map.Map Int Organ -> String
+processRequest id organMap = processAndReport organ
+        where organ = Map.lookup id organMap
+
+--19.1 Empty drawers
+emptyDrawers :: [Maybe Organ] -> Int
+emptyDrawers catalogOrg = length (filter isNothing catalogOrg)
+
+--19.2 map that works on Maybe type
+maybeMap :: (a -> b) -> [Maybe a] -> [Maybe b]
+maybeMap _ [] = []
+maybeMap f ((Just x):xs) = Just (f x) : maybeMap f xs
+maybeMap f (Nothing :xs) = Nothing : maybeMap f xs
+
+organToInt :: Organ -> Int
+organToInt Heart = 22
+organToInt Kidney = 11
+organToInt Spleen = 33
+organToInt Brain = 44
