@@ -1,7 +1,6 @@
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
-import Distribution.Simple.Utils (xargs)
 
 --lesson 19
 --Maybe type: dealing with missing values
@@ -65,8 +64,6 @@ oneStringOrgans = intercalate ", " organList
 numOrZero :: Maybe Int -> Int
 numOrZero (Just a) = a
 numOrZero Nothing = 0
-
-
 
 data Container = Vat Organ | Cooler Organ | Bag Organ
 
