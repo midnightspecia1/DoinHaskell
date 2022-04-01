@@ -2,6 +2,7 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Semigroup
 import Data.Maybe
+import System.Win32 (RegInfoKey(values))
 
 --out fake input data about sales
 file1 :: [(Int,Double)]
@@ -111,6 +112,91 @@ makeTSCompare func = newFunc
                                                         then (i1, Just val1)
                                                         else (i2, Just val2)
 
+compareTS :: Eq a => (a -> a -> a) -> TS a -> Maybe (Int, Maybe a)
+compareTS func (TS [] []) = Nothing
+compareTS func (TS times values) = if all (== Nothing) values
+                                   then Nothing 
+                                   else Just best
+        where pairs = zip times values
+              best = foldl (makeTSCompare func) (0, Nothing) pairs
 
+minTS :: Ord a => TS a -> Maybe (Int, Maybe a)
+minTS = compareTS min
+
+maxTS :: Ord a => TS a -> Maybe (Int, Maybe a)
+maxTS = compareTS max
+
+diffPair :: Num a => Maybe a -> Maybe a -> Maybe a
+diffPair _ Nothing = Nothing
+diffPair Nothing _ = Nothing 
+diffPair (Just a) (Just b) = Just (a - b)
+
+diffTS :: Num a => TS a -> TS a
+diffTS (TS [] []) = (TS [] [])
+diffTS (TS times values) = TS times (Nothing : diffValues)
+                where shiftValues = tail values
+                      diffValues = zipWith diffPair shiftValues values 
+
+--movingAverage function
+meanMaybe :: (Real a) => [Maybe a] -> Maybe Double
+meanMaybe vals = if any (==Nothing) vals
+                 then Nothing 
+                 else (Just avg)
+        where avg = mean (map fromJust vals)
+
+-- movingAvg :: (Real a) => [Maybe a] -> Int -> [Maybe Double]
+-- movingAvg [] _ = []
+-- movingAvg vals n = if length nextVals == n
+--                    then meanMaybe nextVals : movingAvg restVals n
+--                    else []
+--         where nextVals = take n vals
+--               restVals = tail vals
+
+-- movingAverageTS :: (Real a) => TS a -> Int -> TS Double
+-- movingAverageTS (TS [][]) _ = TS [][]
+-- movingAverageTS (TS times vals) n = TS times smothedVals
+--         where ma = movingAvg vals n
+--               nothing = replicate (n `div` 2) Nothing
+--               smothedVals = mconcat [nothing, ma, nothing]
+
+--Use median rather than the mean for the smothing(movingAverage)
+median :: (Real a) => [a] -> a
+median xs = last (take center xs)
+        where center = (length xs) `div` 2
+
+medianMaybe :: (Real a) => [Maybe a] -> Maybe a
+medianMaybe vals =  if any (==Nothing) vals
+                 then Nothing 
+                 else (Just avg)
+        where avg = median (map fromJust vals)
+
+movingAvg :: (Real a) => [Maybe a] -> Int -> [Maybe a]
+movingAvg [] _ = []
+movingAvg vals n = if length nextVals == n
+                   then medianMaybe nextVals : movingAvg restVals n
+                   else []
+        where nextVals = take n vals
+              restVals = tail vals
+
+movingAverageTS :: (Real a) => TS a -> Int -> TS a
+movingAverageTS (TS [][]) _ = TS [][]
+movingAverageTS (TS times vals) n = TS times smothedVals
+        where ma = movingAvg vals n
+              nothing = replicate (n `div` 2) Nothing
+              smothedVals = mconcat [nothing, ma, nothing]
+
+--Creating a function that calculates div rather than div capturing precentage change
+
+divPair :: (Fractional a) => Maybe a -> Maybe a -> Maybe a
+divPair Nothing _ = Nothing
+divPair _ Nothing = Nothing
+divPair (Just a) (Just b) = Just percent
+        where percent = (b / a)*100
+
+divTS :: Fractional a => TS a -> TS a
+divTS (TS[][]) = TS [][]
+divTS (TS times vals) = TS times (Nothing : percents)
+        where shiftValues = tail vals
+              percents = zipWith divPair shiftValues vals
 
 --TODO train with foldl 
