@@ -1,4 +1,4 @@
-
+import Data.Map as Map
 
 mystery1 :: Int -> Int -> Int
 mystery1 a b = (a + b + c)^2
@@ -37,6 +37,13 @@ main = do
 --you can treat this variable outside of the IO context
 --name :: IO String but helloPerson :: String -> String
 
+--21.1 Translate code with usage of do notation and simulate user input with Map
+names :: Map.Map Int String 
+names = Map.fromList [(1,"Gogi"), (2,"Tsahini")]
 
-
+mainNew :: Maybe String
+mainNew = do
+    name <- Map.lookup 1 names
+    let statement = helloPerson name 
+    return statement
 
