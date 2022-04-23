@@ -16,6 +16,7 @@ printCounts (cc, wc, lc) = T.unwords ["chars: ", T.pack (show cc)
                                   , " words: ", T.pack (show wc)
                                   , " lines: ", T.pack (show lc) ]
 
+--strict version of the program (because Text is non-lazy type)
 main :: IO ()
 main = do
     args <- getArgs
