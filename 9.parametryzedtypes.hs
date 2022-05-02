@@ -1,6 +1,5 @@
 import Data.Char
 import qualified Data.Map as Map
-import Graphics.Win32 (newForeignHANDLE)
 
 data Box a = Box a deriving Show
 

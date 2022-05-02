@@ -14,6 +14,7 @@ intToChar int = toEnum safeInt
 intToBC :: Int -> BC.ByteString 
 intToBC int = BC.pack [intToChar int]
 
+-- raondomReplaceBytes ---------
 replaceByte :: Int -> Int -> BC.ByteString -> BC.ByteString 
 replaceByte loc charVal bytes = mconcat [before, new, after]
                 where (before, rest) = BC.splitAt loc bytes
@@ -33,23 +34,41 @@ randomChar = do
     randomInt <- randomRIO (0, 255)
     return (toEnum randomInt)
 
-sortSection :: Int -> Int -> BC.ByteString -> BC.ByteString 
-sortSection start size bytes = mconcat [before, new, after]
+-- randomReverseBytes ---------
+reverseSection :: Int -> Int -> BC.ByteString -> BC.ByteString 
+reverseSection start size bytes = mconcat [before, new, after]
                 where (before, rest) = BC.splitAt start bytes
                       (midle, after) = BC.splitAt size rest
                       new = BC.reverse midle
 
-randomSortSection :: BC.ByteString -> IO BC.ByteString 
-randomSortSection bytes = do
+randomReverseBytes :: BC.ByteString -> IO BC.ByteString 
+randomReverseBytes bytes = do
     let length = BC.length bytes
     let size = 25
     start <- randomRIO (1, length - size)
-    return(sortSection start size bytes)
+    return(reverseSection start size bytes)
+
+-- sortSectionBytes ---------
+-- 25.2 create sortSectionBytes
+sortSection :: Int -> Int -> BC.ByteString -> BC.ByteString
+sortSection start size bytes = mconcat [before, new, after]
+                where (before, rest) = BC.splitAt start bytes
+                      (middle, after) = BC.splitAt size rest
+                      new = BC.sort middle
+
+randomSortSection :: BC.ByteString -> IO BC.ByteString
+randomSortSection bytes = do
+    let length = BC.length bytes
+    let size = 40
+    start <- randomRIO (1, length - size)
+    return (sortSection start size bytes)
+
 
 glitchActions :: [BC.ByteString -> IO BC.ByteString] 
 glitchActions = [randomReplaceByte,
                  randomSortSection,
                  randomReplaceByte,
+                 randomSortSection,
                  randomSortSection]
 
 main :: IO ()
@@ -58,6 +77,7 @@ main = do
     let fileName = head args
     imageFile <- BC.readFile fileName
     glitched <- foldM (\bytes func -> func bytes) imageFile glitchActions
+    --glitched <- randomSortSection imageFile
     let glitchedFileName = mconcat ["glitched_", fileName]
     BC.writeFile glitchedFileName glitched
     print "done!"
