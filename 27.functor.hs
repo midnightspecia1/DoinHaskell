@@ -142,3 +142,10 @@ instance Functor Box where
 
 morePresents :: Int -> Box a -> Box [a]
 morePresents n box = replicate n <$> box
+
+-- ex 27.2
+myBox :: Box Int
+myBox = Box 1
+
+unwrap :: Box Int -> Int
+unwrap (Box a) = a
