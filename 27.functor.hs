@@ -1,4 +1,7 @@
 import qualified Data.Map as Map
+import System.Directory.Internal.Prelude (getArgs)
+import Data.Maybe
+import Sound.OSC (Datum(Double))
 
 -- functor - type class, interface for applying functions to arguments in context
 
@@ -149,3 +152,14 @@ myBox = Box 1
 
 unwrap :: Box Int -> Int
 unwrap (Box a) = a
+
+-- ex 27.3
+getCost :: Int -> Maybe Double
+getCost id = cost <$> Map.lookup id partsDB
+
+main :: IO ()
+main = do
+    args <- getArgs
+    let id = read (head args) :: Int
+    let cost = getCost id
+    maybe (putStrLn "Id is not correct") print cost
