@@ -27,6 +27,20 @@ haversine coords1 coords2 = earthRadius * c
               c = 2 * atan2 (sqrt a) (sqrt (1-a))
               earthRadius = 3961.0
 
+-- 28.1 haversineIO
+haversineIO :: IO LatLong -> IO LatLong -> IO Double
+haversineIO a b = do
+      a <- read <$> getLine
+      b <- read <$> getLine 
+      c <- read <$> getLine
+      d <- read <$> getLine 
+      let hav = haversine (a, b) (d, c)
+      return hav
+
+-- 28.2 haversineIO
+-- haversineIO :: IO LatLong -> IO LatLong -> IO Double
+-- haversineIO a b = haversine <$> a <*> b
+
 printDistance :: Maybe Double -> IO ()
 printDistance Nothing = putStrLn  "Error, invalid city entered"
 printDistance (Just distance) = putStrLn (show distance ++ " miles")
