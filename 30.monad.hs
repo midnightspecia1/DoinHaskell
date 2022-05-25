@@ -48,3 +48,35 @@ creditsFromId id = altLookupCredits (lookupUserName id)
 -- echo :: IO ()
 -- IO String -> (String -> IO()) -> IO()
 -- f a -> (a -> f b) -> f b
+
+-- operator >> used when we want to perform an action and trow out the return value
+echoVerbose :: IO ()
+echoVerbose = putStrLn "Enter some message" >>
+              getLine >>= putStrLn
+
+-- using Monad to build Hello <user> program
+askForName :: IO ()
+askForName = putStrLn "What is your name?"
+
+nameStatement :: String -> String
+nameStatement name = "Hello, " ++ name ++ " !"
+
+helloName :: IO ()
+helloName = askForName >> 
+            getLine >>= 
+            (\name -> 
+                return (nameStatement name)) >>=
+            putStrLn
+
+-- 30.1 allFmapM
+allFMapM :: Monad m => (a -> b) -> m a -> m b
+allFMapM foo var = var >>= (\x -> return (foo x))
+
+-- 30.2 allApp
+allApp :: Monad m => m (a -> b) -> m a -> m b
+allApp foo var = foo >>= (\f -> var >>= (\x -> return (f x)))
+
+-- 30.3 bind function for Maybe
+bind :: Maybe a -> (a -> Maybe b) -> Maybe b
+bind Nothing _ = Nothing
+bind (Just a) foo = foo a
