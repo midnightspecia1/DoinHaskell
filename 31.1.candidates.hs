@@ -19,4 +19,32 @@ viable c = all (== True) tests
                       ,educationMin]
 
 testCandidate :: Candidate
-testCandidate = Candidate ( 1 , D , B , PhD )
+testCandidate = Candidate {candidateId = 1
+                         , codeReview = A
+                         , cultureFit = A
+                         , education = PhD }
+
+readInt :: IO Int
+readInt = getLine >>= (return . read)
+
+readGrade :: IO Grade
+readGrade = getLine >>= (return . read)
+
+readDegree :: IO Degree
+readDegree = getLine >>= (return . read)
+
+readCandidate :: IO Candidate
+readCandidate = do
+        putStrLn "enter id: "
+        cId <- readInt
+        putStrLn "enter code grade: "
+        codeGrade <- readGrade
+        putStrLn "enter culture fit grade: "
+        culture <- readGrade
+        putStrLn "enter education: "
+        education <- readDegree
+        return (Candidate { candidateId = cId
+                          , codeReview = codeGrade
+                          , cultureFit = culture
+                          , education = education})
+
