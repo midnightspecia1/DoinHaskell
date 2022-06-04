@@ -37,6 +37,7 @@ describePizza (size, cost) = "The " ++ show size ++ " pizza " ++
 --     let betterPizza = comparePizza pizza1 pizza2
 --     putStrLn (describePizza betterPizza)
 
+-- 31.1
 main :: IO ()
 main = putStrLn "What is the size of pizza 1 " >>
        getLine >>=
@@ -67,3 +68,26 @@ maybeMain = do
     let betterPizza = comparePizza pizza1 pizza2
     return (describePizza betterPizza)
     
+-- 31.2 
+listMain :: [String]
+listMain = do
+    size1 <- [12, 13 ,16]
+    cost1 <- [7.2, 9.6, 10.0]
+    size2 <- [8, 13, 14]
+    cost2 <- [10.0, 13.0, 12.5]
+    let pizza1 = (size1, cost1)
+    let pizza2 = (size2, cost2)
+    let betterPizza = comparePizza pizza1 pizza2
+    return (describePizza betterPizza)
+
+-- 31.3
+anyMain :: Monad m => m Double -> m Double -> m Double -> m Double -> m String
+anyMain size1 size2 cost1 cost2 = do
+    s1 <- size1
+    s2 <- size2
+    c1 <- cost1
+    c2 <- cost2
+    let pizza1 = (s1, c1)
+    let pizza2 = (s2, c2)
+    let betterPizza = comparePizza pizza1 pizza2
+    return (describePizza betterPizza)
