@@ -69,3 +69,12 @@ monthEnds = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 dates :: [Int]
 dates = [days | daysCount <- monthEnds, days <- [1 .. daysCount]]
+
+-- ex 32.2 translating above to do-notation and monadic methods
+datesDo :: [Int]
+datesDo = do
+    daysCount <- monthEnds
+    [1 .. daysCount]
+
+datesMo :: [Int]
+datesMo = monthEnds >>= (\mEnds -> [1 .. mEnds])
