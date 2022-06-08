@@ -48,19 +48,7 @@ instance Semigroup Color where
 
 instance Monoid Color where
     mempty = Transparent
-    mappend Red Blue = Purple
-    mappend Blue Red = Purple
-    mappend Yellow Blue = Green
-    mappend Blue Yellow = Green
-    mappend Red Yellow = Orange
-    mappend Yellow Red = Orange
-    mappend a b | a == b = a
-                | a == mempty = b
-                | b == mempty = a
-                | all (`elem` [Red, Blue, Purple]) [a, b] = Purple
-                | all (`elem` [Blue,Yellow,Green]) [a, b] = Green
-                | all (`elem` [Red, Yellow, Orange]) [a, b] = Orange
-                | otherwise = Brown
+    mappend = (<>)
 
 --this code working not Associative
 --Associative - means that order in witch you apply <> doesn't matter

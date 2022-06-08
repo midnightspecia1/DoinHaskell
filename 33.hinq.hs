@@ -42,6 +42,14 @@ _where pred vals = do
     guard (pred val)
     return val
 
+_join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
+_join data1 data2 prop1 prop2 = do
+    d1 <- data1
+    d2 <- data2
+    let dpairs = (d1, d2)
+    guard (prop1 (fst dpairs) == prop2 (snd dpairs))
+    return dpairs
+
 -- helper function - checks whether or not word starts with some specific letter
 startsWith :: Char -> String -> Bool
 startsWith c word = c == head word
@@ -66,13 +74,6 @@ courses :: [Course]
 courses = [ Course 101 "French" 100
           , Course 102 "English" 200]
 
-_join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
-_join data1 data2 prop1 prop2 = do
-    d1 <- data1
-    d2 <- data2
-    let dpairs = (d1, d2)
-    guard (prop1 (fst dpairs) == prop2 (snd dpairs))
-    return dpairs
 
 -- building HINQ interface
 _hinq selectQuery joinQuery whereQuery = (\joinData ->
@@ -161,3 +162,34 @@ getEnrollments courseName = runHINQ courseQuery
                                      (_join studentEnrolments courses snd courseId)
                                      (_where ((== courseName) . courseTitle . snd))
 
+-- extending HINQ with Monoid type class
+instance Semigroup (HINQ a b c) where
+    (<>) (HINQ [] a1 b1) (HINQ [] a2 b2) = HINQ (_select )
+                                                (_join (runHINQ [] a2 b2) )
+
+
+
+-- data HINQ m a b = HINQ (m a -> m b) (m a) (m a -> m a)
+--                 | HINQ_ (m a -> m b) (m a)
+
+-- _select :: Monad m => (a -> b) -> m a -> m b
+-- _select prop vals = do
+--     val <- vals
+--     return (prop val)
+
+-- -- we can use lambda to sleect multiple properties like this
+-- -- _select (\x -> (studentName x, gradeLevel x)) students
+
+-- _where :: (Monad m, Alternative m) => (a -> Bool) -> m a -> m a
+-- _where pred vals = do
+--     val <- vals
+--     guard (pred val)
+--     return val
+
+-- _join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
+-- _join data1 data2 prop1 prop2 = do
+--     d1 <- data1
+--     d2 <- data2
+--     let dpairs = (d1, d2)
+--     guard (prop1 (fst dpairs) == prop2 (snd dpairs))
+--     return dpairs
