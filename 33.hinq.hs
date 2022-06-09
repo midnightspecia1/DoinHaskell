@@ -95,11 +95,14 @@ teacherFirstName = _hinq (_select firstName)
 -- now we making generic HINQ type
 data HINQ m a b = HINQ (m a -> m b) (m a) (m a -> m a)
                 | HINQ_ (m a -> m b) (m a)
+                | HINQempty
+
 
 runHINQ :: (Monad m, Alternative m) => HINQ m a b -> m b
 runHINQ (HINQ sClause jClause wClause) = _hinq sClause jClause wClause
 runHINQ (HINQ_ sClause jClause) = _hinq sClause jClause
                                                 (_where (\_ -> True))
+runHINQ HINQempty = empty
 
 query1 :: HINQ [] (Teacher, Course) Name
 query1 = HINQ (_select (teacherName . fst))
@@ -141,6 +144,7 @@ enrollments = [Enrollment 1 101
               ,Enrollment 5 101
               ,Enrollment 6 201 ]
 
+studentEnrollmentsQ :: HINQ [] (Student, Enrollment) (Name, Int)
 studentEnrollmentsQ = HINQ_ (_select (\(st, en) -> (studentName st, course en)))
                            (_join students enrollments studentId student)
 
@@ -163,33 +167,18 @@ getEnrollments courseName = runHINQ courseQuery
                                      (_where ((== courseName) . courseTitle . snd))
 
 -- extending HINQ with Monoid type class
-instance Semigroup (HINQ a b c) where
-    (<>) (HINQ [] a1 b1) (HINQ [] a2 b2) = HINQ (_select )
-                                                (_join (runHINQ [] a2 b2) )
+instance (Semigroup (m a)) => Semigroup (HINQ m a b) where
+    (HINQ s1 j1 w1) <> (HINQ s2 j2 w2) = 
+        HINQ s1 (j1 <> j2) (w1 <> w2)
+    (HINQ s1 j1 w1) <> (HINQ_ s2 j2) = 
+        HINQ s1 (j1 <> j2) w1
+    (HINQ_ s1 j1) <> (HINQ_ s2 j2) =
+        HINQ_ s1 (j1 <> j2)
+    (HINQ_ s1 j1) <> (HINQ s2 j2 w2) = 
+        HINQ s1 (j1 <> j2) w2
+    _ <> HINQempty = HINQempty
+    HINQempty <> _ = HINQempty
 
-
-
--- data HINQ m a b = HINQ (m a -> m b) (m a) (m a -> m a)
---                 | HINQ_ (m a -> m b) (m a)
-
--- _select :: Monad m => (a -> b) -> m a -> m b
--- _select prop vals = do
---     val <- vals
---     return (prop val)
-
--- -- we can use lambda to sleect multiple properties like this
--- -- _select (\x -> (studentName x, gradeLevel x)) students
-
--- _where :: (Monad m, Alternative m) => (a -> Bool) -> m a -> m a
--- _where pred vals = do
---     val <- vals
---     guard (pred val)
---     return val
-
--- _join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
--- _join data1 data2 prop1 prop2 = do
---     d1 <- data1
---     d2 <- data2
---     let dpairs = (d1, d2)
---     guard (prop1 (fst dpairs) == prop2 (snd dpairs))
---     return dpairs
+instance (Semigroup (m a), Semigroup (m b)) => Monoid (HINQ m a b) where
+    mempty = HINQempty    
+    
