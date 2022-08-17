@@ -42,6 +42,14 @@ _where pred vals = do
     guard (pred val)
     return val
 
+_join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
+_join data1 data2 prop1 prop2 = do
+    d1 <- data1
+    d2 <- data2
+    let dpairs = (d1, d2)
+    guard (prop1 (fst dpairs) == prop2 (snd dpairs))
+    return dpairs
+
 -- helper function - checks whether or not word starts with some specific letter
 startsWith :: Char -> String -> Bool
 startsWith c word = c == head word
@@ -66,13 +74,6 @@ courses :: [Course]
 courses = [ Course 101 "French" 100
           , Course 102 "English" 200]
 
-_join :: (Monad m, Alternative m, Eq c) => m a -> m b -> (a -> c) -> (b -> c) -> m (a, b)
-_join data1 data2 prop1 prop2 = do
-    d1 <- data1
-    d2 <- data2
-    let dpairs = (d1, d2)
-    guard (prop1 (fst dpairs) == prop2 (snd dpairs))
-    return dpairs
 
 -- building HINQ interface
 _hinq selectQuery joinQuery whereQuery = (\joinData ->
@@ -94,7 +95,90 @@ teacherFirstName = _hinq (_select firstName)
 -- now we making generic HINQ type
 data HINQ m a b = HINQ (m a -> m b) (m a) (m a -> m a)
                 | HINQ_ (m a -> m b) (m a)
-                
+                | HINQempty
 
 
-                                                
+runHINQ :: (Monad m, Alternative m) => HINQ m a b -> m b
+runHINQ (HINQ sClause jClause wClause) = _hinq sClause jClause wClause
+runHINQ (HINQ_ sClause jClause) = _hinq sClause jClause
+                                                (_where (\_ -> True))
+runHINQ HINQempty = empty
+
+query1 :: HINQ [] (Teacher, Course) Name
+query1 = HINQ (_select (teacherName . fst))
+              (_join teachers courses teacherId teacher)
+              (_where ((=="English") . courseTitle. snd))
+
+query2 :: HINQ [] Teacher Name
+query2 = HINQ_ (_select teacherName)
+               teachers
+
+-- refactored select where and join can work with monads so
+possibleTeacher :: Maybe Teacher
+possibleTeacher = Just (head teachers)
+
+possibleCourse :: Maybe Course
+possibleCourse = Just (head courses)
+
+maybeQuery1 :: HINQ Maybe (Teacher, Course) Name
+maybeQuery1 = HINQ (_select (teacherName . fst))
+                  (_join possibleTeacher possibleCourse teacherId teacher)
+                  (_where ((=="French") . courseTitle . snd))
+
+maybeQuery2 :: HINQ Maybe Teacher Name
+maybeQuery2 = HINQ_ (_select teacherName)
+                    possibleTeacher
+
+-- quering our data to determine course enrolment
+data Enrollment = Enrollment
+                    {student :: Int
+                    ,course :: Int} deriving Show
+
+enrollments :: [Enrollment]
+enrollments = [Enrollment 1 101
+              ,Enrollment 2 101
+              ,Enrollment 2 201
+              ,Enrollment 3 101
+              ,Enrollment 4 201
+              ,Enrollment 4 101
+              ,Enrollment 5 101
+              ,Enrollment 6 201 ]
+
+studentEnrollmentsQ :: HINQ [] (Student, Enrollment) (Name, Int)
+studentEnrollmentsQ = HINQ_ (_select (\(st, en) -> (studentName st, course en)))
+                           (_join students enrollments studentId student)
+
+studentEnrolments :: [(Name, Int)]
+studentEnrolments = runHINQ studentEnrollmentsQ
+
+englishStudentsQ :: HINQ [] ((Name, Int), Course) Name
+englishStudentsQ = HINQ (_select (fst . fst))
+                        (_join studentEnrolments courses snd courseId)
+                        (_where ((=="English") . courseTitle . snd))
+
+englishStudents :: [Name]
+englishStudents = runHINQ englishStudentsQ 
+
+-- generic function to get enrollments
+getEnrollments :: String -> [Name]
+getEnrollments courseName = runHINQ courseQuery
+            where courseQuery = HINQ (_select (fst . fst))
+                                     (_join studentEnrolments courses snd courseId)
+                                     (_where ((== courseName) . courseTitle . snd))
+
+-- extending HINQ with Monoid type class
+instance (Semigroup (m a)) => Semigroup (HINQ m a b) where
+    (HINQ s1 j1 w1) <> (HINQ s2 j2 w2) = 
+        HINQ s1 (j1 <> j2) (w1 <> w2)
+    (HINQ s1 j1 w1) <> (HINQ_ s2 j2) = 
+        HINQ s1 (j1 <> j2) w1
+    (HINQ_ s1 j1) <> (HINQ_ s2 j2) =
+        HINQ_ s1 (j1 <> j2)
+    (HINQ_ s1 j1) <> (HINQ s2 j2 w2) = 
+        HINQ s1 (j1 <> j2) w2
+    _ <> HINQempty = HINQempty
+    HINQempty <> _ = HINQempty
+
+instance (Semigroup (m a), Semigroup (m b)) => Monoid (HINQ m a b) where
+    mempty = HINQempty    
+    
